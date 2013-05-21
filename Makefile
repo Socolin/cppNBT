@@ -4,7 +4,7 @@ CPPFLAGS=-Wall -ansi -pedantic -O2 -fno-elide-constructors -g -L.
 # Main program sources
 FILES=util.cc tag.cc tag_byte.cc tag_byte_array.cc tag_compound.cc tag_list.cc \
 	  tag_end.cc tag_double.cc tag_long.cc tag_string.cc tag_short.cc \
-	  tag_int.cc tag_float.cc nbtfile.cc
+	  tag_int.cc tag_float.cc nbtfile.cc tag_int_array.cc
 
 SOURCES=$(addprefix src/, $(FILES))
 HEADERS=$(addsuffix .h, $(basename $(SOURCES)))
