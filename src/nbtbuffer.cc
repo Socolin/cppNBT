@@ -81,6 +81,7 @@ namespace nbt
         //all done reading, clean-up
         _buffer = NULL;
 
+        delete[] inflatedBuffer;
     }
 
     Tag *NbtBuffer::getRoot() const
