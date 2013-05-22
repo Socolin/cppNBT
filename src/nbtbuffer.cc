@@ -27,13 +27,13 @@ namespace nbt
     typedef Tag *(NbtBuffer::*NbtMembFn)(); // Again...
 
     NbtBuffer::NbtBuffer()
-        : _root(NULL), _buffer(NULL)
+        : _root(NULL), _buffer(NULL), bufferSize(0), bufferPos(0)
     {
 
     }
 
     NbtBuffer::NbtBuffer(uint8_t *compressedBuffer, unsigned int length)
-        : _root(NULL), _buffer(NULL)
+        : _root(NULL), _buffer(NULL), bufferSize(0), bufferPos(0)
     {
         read(compressedBuffer, length);
     }
@@ -50,11 +50,21 @@ namespace nbt
         memset(inflatedBuffer, 0, BUFF_SIZE);
 
         int result = uncompress(inflatedBuffer, &BUFF_SIZE, compressedBuffer, length);
-        if (result != Z_STREAM_END && result != Z_BUF_ERROR)
+        while (result == Z_BUF_ERROR)
+        {
+            delete[] inflatedBuffer;
+            BUFF_SIZE = BUFF_SIZE * 2;
+            inflatedBuffer = new uint8_t[BUFF_SIZE];
+            result = uncompress(inflatedBuffer, &BUFF_SIZE, compressedBuffer, length);
+
+        }
+        if (result != Z_STREAM_END && result!= Z_OK)
         {
             delete[] inflatedBuffer;
             return;
         }
+
+        bufferSize = BUFF_SIZE;
 
         //setup the buffer stream
         _buffer = inflatedBuffer;
@@ -70,7 +80,32 @@ namespace nbt
 
         //all done reading, clean-up
         _buffer = NULL;
-        delete[] inflatedBuffer;
+
+    }
+
+    Tag *NbtBuffer::getRoot() const
+    {
+        return _root;
+    }
+
+    void NbtBuffer::setRoot(const Tag &r)
+    {
+        delete _root;
+        _root = r.clone();
+    }
+
+    void NbtBuffer::readBuffer(void* buf, unsigned len)
+    {
+        if (bufferPos + len <= bufferSize)
+        {
+            memcpy(buf, _buffer + bufferPos, len);
+            bufferPos += len;
+
+        }
+        else
+        {
+            std::cerr << "ERREUR !" << std::endl;
+        }
     }
 
     NbtMembFn NbtBuffer::getReader(uint8_t type)
@@ -94,9 +129,9 @@ namespace nbt
 
     Tag *NbtBuffer::readTag()
     {
-        uint8_t type = *((uint8_t *)_buffer);
-        _buffer += sizeof(uint8_t);
+        uint8_t type = 0;
 
+        readBuffer(&type, 1);
         if (type == TAG_END)
             return new TagEnd();
 
@@ -104,11 +139,6 @@ namespace nbt
         TagString *nameTagStr = dynamic_cast<TagString *>(nameTag);
 
         NbtMembFn reader = getReader(type);
-        if (reader == 0)
-        {
-            delete nameTag;
-            return 0;
-        }
         Tag *res = (this->*reader)();
         res->setName(nameTagStr->getValue());
 
@@ -116,18 +146,19 @@ namespace nbt
         return res;
     }
 
+
     Tag *NbtBuffer::readByte()
     {
-        uint8_t byte = *((uint8_t *)_buffer);
-        _buffer += sizeof(uint8_t);
+        uint8_t byte;
+        readBuffer(&byte, 1);
 
         return new TagByte("", byte);
     }
 
     Tag *NbtBuffer::readShort()
     {
-        int16_t val = *((int16_t *)_buffer);
-        _buffer += sizeof(int16_t);
+        int16_t val;
+        readBuffer(&val, 2);
 
         if (!is_big_endian())
             flipBytes<int16_t>(val);
@@ -137,8 +168,8 @@ namespace nbt
 
     Tag *NbtBuffer::readInt()
     {
-        int32_t val = *((int32_t *)_buffer);
-        _buffer += sizeof(int32_t);
+        int32_t val;
+        readBuffer(&val, 4);
 
         if (!is_big_endian())
             flipBytes<int32_t>(val);
@@ -146,34 +177,10 @@ namespace nbt
         return new TagInt("", val);
     }
 
-    Tag *NbtBuffer::readIntArray()
-    {
-        int32_t len = *((int32_t *)_buffer);
-        _buffer += sizeof(int32_t);
-
-        if (!is_big_endian())
-            flipBytes<int32_t>(len);
-
-        IntArray ia;
-        for (int i = 0; i < len; ++i)
-        {
-            int32_t val = *((int32_t *)_buffer);
-            _buffer += sizeof(int32_t);
-
-            if (!is_big_endian())
-                flipBytes<int32_t>(val);
-
-            ia.push_back(val);
-        }
-
-        return new TagIntArray("", ia);
-    }
-
-
     Tag *NbtBuffer::readLong()
     {
-        int64_t val = *((int64_t *)_buffer);
-        _buffer += sizeof(int64_t);
+        int64_t val;
+        readBuffer(&val, 8);
 
         if (!is_big_endian())
             flipBytes<int64_t>(val);
@@ -183,8 +190,8 @@ namespace nbt
 
     Tag *NbtBuffer::readFloat()
     {
-        float val = *((float *)_buffer);
-        _buffer += sizeof(float);
+        float val;
+        readBuffer(&val, 4);
 
         if (!is_big_endian())
             flipBytes<float>(val);
@@ -194,8 +201,8 @@ namespace nbt
 
     Tag *NbtBuffer::readDouble()
     {
-        double val = *((double *)_buffer);
-        _buffer += sizeof(double);
+        double val;
+        readBuffer(&val, 8);
 
         if (!is_big_endian())
             flipBytes<double>(val);
@@ -205,28 +212,43 @@ namespace nbt
 
     Tag *NbtBuffer::readByteArray()
     {
-        int32_t len = *((int32_t *)_buffer);
-        _buffer += sizeof(int32_t);
+        int32_t len;
+        readBuffer(&len, 4);
 
         if (!is_big_endian())
             flipBytes<int32_t>(len);
 
-		unsigned char *byteArray = new unsigned char[len];
+        unsigned char *byteArray = new unsigned char[len];
 
-        for (int i = 0; i < len; ++i)
-        {
-            uint8_t byte = *((uint8_t *)_buffer);
-			byteArray[i] = byte;
-            _buffer += sizeof(uint8_t);
-        }
+        readBuffer(byteArray, len);
 
         return new TagByteArray("", byteArray, len);
     }
 
+    Tag *NbtBuffer::readIntArray()
+    {
+        int32_t len;
+        readBuffer(&len, 4);
+
+        if (!is_big_endian())
+            flipBytes<int32_t>(len);
+
+        IntArray ia;
+        for (int i = 0; i < len; ++i)
+        {
+            int32_t val;
+            readBuffer(&val, 4);
+
+            ia.push_back(val);
+        }
+
+        return new TagIntArray("", ia);
+    }
+
     Tag *NbtBuffer::readString()
     {
-        int16_t len = *((int16_t *)_buffer);
-        _buffer += sizeof(int16_t);
+        int16_t len;
+        readBuffer(&len, 2);
 
         if (!is_big_endian())
             flipBytes<int16_t>(len);
@@ -235,21 +257,21 @@ namespace nbt
         for (int i = 0; i < len; ++i)
         {
             // TODO: Read blocks
-            uint8_t ch = *_buffer;
-            _buffer += sizeof(uint8_t);
+            uint8_t ch;
+            readBuffer(&ch, 1);
             str.push_back(ch);
         }
-        
+
         return new TagString("", str);
     }
 
     Tag *NbtBuffer::readList()
     {
-        int8_t childType = *((int8_t *)_buffer);
-        _buffer += sizeof(int8_t);
+        int8_t childType;
+        int32_t len;
 
-        int32_t len = *((int32_t *)_buffer);
-        _buffer += sizeof(int32_t);
+        readBuffer(&childType, 1);
+        readBuffer(&len, 4);
 
         TagList *ret = new TagList(childType, "");
 
@@ -283,16 +305,5 @@ namespace nbt
         }
 
         return ret;
-    }
-    
-    Tag *NbtBuffer::getRoot() const
-    {
-        return _root;
-    }
-
-    void NbtBuffer::setRoot(const Tag &r)
-    {
-        delete _root;
-        _root = r.clone();
     }
 }

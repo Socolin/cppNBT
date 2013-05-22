@@ -17,38 +17,47 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "cppnbt.h"
+#include <cstring>
 
 namespace nbt
 {
-	TagByteArray::TagByteArray(const std::string &name, unsigned char *values, unsigned int newSize)
+    TagByteArray::TagByteArray(const std::string &name, unsigned char *values, unsigned int newSize)
         : Tag(name), pValues(values), size(newSize)
     {
 
-	}
+    }
 
 
-    TagByteArray::TagByteArray(const TagByteArray &t) : Tag(t.getName())
+    TagByteArray::TagByteArray(const TagByteArray &t)
+        : Tag(t.getName())
+        , pValues(0)
+        , size(t.size)
     {
+        pValues = new unsigned char[size];
+        memcpy(pValues, t.pValues, size);
+    }
 
-	}
-
+    TagByteArray::~TagByteArray()
+    {
+        delete[] pValues;
+    }
     
     const unsigned char *TagByteArray::getValues() const
     {
-		return pValues;
+        return pValues;
     }
 
 
     void TagByteArray::setValues(unsigned char *values, unsigned int newSize)
     {
         pValues = values;
-		size = newSize;
+        size = newSize;
     }
 
-	unsigned int TagByteArray::getSize() const
-	{
-		return size;
-	}
+    unsigned int TagByteArray::getSize() const
+    {
+        return size;
+    }
 
 
     uint8_t TagByteArray::getType() const
@@ -85,9 +94,9 @@ namespace nbt
         
         ret << ": ";
 
-		ret << size << " bytes";
+        ret << size << " bytes";
 
-		//comment this out if you wanna see the raw data
+        //comment this out if you wanna see the raw data
         //for (size_t i = 0; i < size; ++i)
         //{
         //    ret << "0x";
@@ -99,8 +108,9 @@ namespace nbt
         return ret.str();
     }
 
+
     Tag* TagByteArray::clone() const
     {
-		return new TagByteArray(_name, pValues, size);
+        return new TagByteArray(*this);
     }
 }

@@ -208,14 +208,14 @@ namespace nbt
         if (!is_big_endian())
             flipBytes<int32_t>(len);
 
-		unsigned char *byteArray = new unsigned char[len];
+        unsigned char *byteArray = new unsigned char[len];
 
         for (int i = 0; i < len; ++i)
         {
             uint8_t byte;
             gzread(_file, &byte, 1);
 
-			byteArray[i] = byte;
+            byteArray[i] = byte;
         }
 
         return new TagByteArray("", byteArray, len);

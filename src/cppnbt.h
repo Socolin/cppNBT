@@ -133,11 +133,12 @@ namespace nbt
         public:
             TagByteArray(const std::string &name, unsigned char *values, unsigned int size);
             TagByteArray(const TagByteArray &t);
+            virtual ~TagByteArray();
 
             const unsigned char *getValues() const;
             void setValues(unsigned char *values, unsigned int size);
 
-			unsigned int getSize() const;
+            unsigned int getSize() const;
 
             virtual uint8_t getType() const;
             virtual ByteArray toByteArray() const;
@@ -146,8 +147,8 @@ namespace nbt
             virtual Tag *clone() const;
 
         protected:
-			unsigned char *pValues;
-			unsigned int size;
+            unsigned char *pValues;
+            unsigned int size;
     };
 
 
@@ -419,6 +420,7 @@ namespace nbt
             void setRoot(const Tag &r);
 
         protected:
+            void readBuffer(void* buf, unsigned len);
             NbtMembFn getReader(uint8_t type);
 
             Tag *readTag();
@@ -438,6 +440,8 @@ namespace nbt
             Tag *_root;
 
             uint8_t *_buffer; //will be NULL if not in the middle of a read() !
+            size_t bufferSize;
+            size_t bufferPos;
     };
 
     class NbtFile
