@@ -50,7 +50,11 @@ namespace nbt
         memset(inflatedBuffer, 0, BUFF_SIZE);
 
         int result = uncompress(inflatedBuffer, &BUFF_SIZE, compressedBuffer, length);
-        assert(result == Z_OK);
+        if (result != Z_STREAM_END && result != Z_BUF_ERROR)
+        {
+            delete[] inflatedBuffer;
+            return;
+        }
 
         //setup the buffer stream
         _buffer = inflatedBuffer;
@@ -100,6 +104,11 @@ namespace nbt
         TagString *nameTagStr = dynamic_cast<TagString *>(nameTag);
 
         NbtMembFn reader = getReader(type);
+        if (reader == 0)
+        {
+            delete nameTag;
+            return 0;
+        }
         Tag *res = (this->*reader)();
         res->setName(nameTagStr->getValue());
 
