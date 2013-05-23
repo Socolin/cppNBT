@@ -191,6 +191,8 @@ namespace nbt
             std::vector<std::string> getKeys() const;
             std::vector<Tag *> getValues() const;
             Tag *getValueAt(const std::string &key) const;
+            template <typename T>
+            T *getValueAt(const std::string &key) const;
 
             virtual uint8_t getType() const;
             virtual ByteArray toByteArray() const;
@@ -486,7 +488,17 @@ namespace nbt
 
             gzFile _file;
     };
-}
 
+    template<typename T>
+    inline T* TagCompound::getValueAt(const std::string& key) const
+    {
+        auto tagItr = _value.find(key);
+        if (tagItr != _value.end())
+        {
+            return dynamic_cast<T*>(tagItr->second);
+        }
+        return nullptr;
+    }
+}
 
 #endif
