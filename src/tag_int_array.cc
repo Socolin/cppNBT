@@ -17,33 +17,46 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "cppnbt.h"
+#include <cstring>
 
 namespace nbt
 {
-    TagIntArray::TagIntArray(const std::string &name, const IntArray &value) 
+    TagIntArray::TagIntArray(const std::string &name, int* value, size_t size)
         : Tag(name)
+        , _values(value)
+        , _size(size)
     {
-        _value = value;
     }
 
-
-    TagIntArray::TagIntArray(const TagIntArray &t) : Tag(t.getName())
+    TagIntArray::TagIntArray(const TagIntArray &t)
+        : Tag(t.getName())
+        , _values(0)
+        , _size(t._size)
     {
-        _value = t.getValue();
+        _values = new int[_size];
+        memcpy(_values, t._values, _size);
     }
 
-    
-    IntArray TagIntArray::getValue() const
+    TagIntArray::~TagIntArray()
     {
-        return _value;
+        delete _values;
     }
 
-
-    void TagIntArray::setValue(const IntArray &value)
+    int* TagIntArray::getValues() const
     {
-        _value = value;
+        return _values;
     }
 
+    void TagIntArray::setValues(int *values, unsigned int newSize)
+    {
+        _values = values;
+        _size = newSize;
+    }
+
+    unsigned int TagIntArray::getSize() const
+    {
+        return _size;
+    }
 
     uint8_t TagIntArray::getType() const
     {
@@ -55,18 +68,11 @@ namespace nbt
     {
         ByteArray ret = Tag::toByteArray();
 
-        int32_t len = _value.size();
-        uint8_t *split = reinterpret_cast<uint8_t *>(&len);
+        ret.push_back(htobe32(_size));
 
-        for (int i = 3; i >= 0; --i)
-            ret.push_back(split[i]);
-
-        for (int k = 0; k < len; ++k) 
+        for (size_t k = 0; k < _size; ++k)
         {
-            split = reinterpret_cast<uint8_t *>(_value[k]);
-
-            for (int i = 3; i >= 0; --i)
-                ret.push_back(split[i]);
+            ret.push_back(htobe32(_values[k]));
         }
 
         return ret;
@@ -84,9 +90,9 @@ namespace nbt
         
         ret << ": ";
 
-		ret << _value.size() << " ints";
+        ret << _size << " ints";
 
-		//comment this out if you wanna see the raw data
+        //comment this out if you wanna see the raw data
         //for (size_t i = 0; i < _value.size(); ++i)
         //{
         //    ret << "0x";
@@ -98,8 +104,9 @@ namespace nbt
         return ret.str();
     }
 
+
     Tag* TagIntArray::clone() const
     {
-        return new TagIntArray(_name, _value);
+        return new TagIntArray(*this);
     }
 }

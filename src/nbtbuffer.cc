@@ -26,6 +26,22 @@ namespace nbt
 {
     typedef Tag *(NbtBuffer::*NbtMembFn)(); // Again...
 
+    const NbtMembFn NbtBuffer::readerFunctions[] =
+    {
+            NULL,
+            &NbtBuffer::readByte,
+            &NbtBuffer::readShort,
+            &NbtBuffer::readInt,
+            &NbtBuffer::readLong,
+            &NbtBuffer::readFloat,
+            &NbtBuffer::readDouble,
+            &NbtBuffer::readByteArray,
+            &NbtBuffer::readString,
+            &NbtBuffer::readList,
+            &NbtBuffer::readCompound,
+            &NbtBuffer::readIntArray,
+    };
+
     NbtBuffer::NbtBuffer()
         : _root(NULL), _buffer(NULL), bufferSize(0), bufferPos(0)
     {
@@ -43,28 +59,29 @@ namespace nbt
         delete _root;
     }
 
+    #define BASE_BUFFER_SIZE 32768
     void NbtBuffer::read(uint8_t *compressedBuffer, unsigned int length)
     {
-        uLongf BUFF_SIZE = length * 128;
-        uint8_t *inflatedBuffer = new uint8_t[BUFF_SIZE];
-        memset(inflatedBuffer, 0, BUFF_SIZE);
+        static thread_local uint8_t *inflatedBuffer = new uint8_t[BASE_BUFFER_SIZE];
+        static thread_local size_t inflatedBufferSize = BASE_BUFFER_SIZE;
+        uLongf uncompressedSize = inflatedBufferSize;
 
-        int result = uncompress(inflatedBuffer, &BUFF_SIZE, compressedBuffer, length);
+        int result = uncompress(inflatedBuffer, &uncompressedSize, compressedBuffer, length);
         while (result == Z_BUF_ERROR)
         {
+            inflatedBufferSize *= 2;
             delete[] inflatedBuffer;
-            BUFF_SIZE = BUFF_SIZE * 2;
-            inflatedBuffer = new uint8_t[BUFF_SIZE];
-            result = uncompress(inflatedBuffer, &BUFF_SIZE, compressedBuffer, length);
+            inflatedBuffer = new uint8_t[inflatedBufferSize];
+            uncompressedSize = inflatedBufferSize;
 
+            result = uncompress(inflatedBuffer, &uncompressedSize, compressedBuffer, length);
         }
         if (result != Z_STREAM_END && result!= Z_OK)
         {
-            delete[] inflatedBuffer;
             return;
         }
 
-        bufferSize = BUFF_SIZE;
+        bufferSize = uncompressedSize;
 
         //setup the buffer stream
         _buffer = inflatedBuffer;
@@ -81,7 +98,6 @@ namespace nbt
         //all done reading, clean-up
         _buffer = NULL;
 
-        delete[] inflatedBuffer;
     }
 
     Tag *NbtBuffer::getRoot() const
@@ -97,35 +113,9 @@ namespace nbt
 
     void NbtBuffer::readBuffer(void* buf, unsigned len)
     {
-        if (bufferPos + len <= bufferSize)
-        {
-            memcpy(buf, _buffer + bufferPos, len);
-            bufferPos += len;
-
-        }
-        else
-        {
-            std::cerr << "ERREUR !" << std::endl;
-        }
-    }
-
-    NbtMembFn NbtBuffer::getReader(uint8_t type)
-    {
-        switch (type)
-        {
-            case TAG_BYTE:       return &NbtBuffer::readByte;
-            case TAG_SHORT:      return &NbtBuffer::readShort;
-            case TAG_INT:        return &NbtBuffer::readInt;
-            case TAG_LONG:       return &NbtBuffer::readLong;
-            case TAG_FLOAT:      return &NbtBuffer::readFloat;
-            case TAG_DOUBLE:     return &NbtBuffer::readDouble;
-            case TAG_BYTE_ARRAY: return &NbtBuffer::readByteArray;
-            case TAG_STRING:     return &NbtBuffer::readString;
-            case TAG_LIST:       return &NbtBuffer::readList;
-            case TAG_COMPOUND:   return &NbtBuffer::readCompound;
-            case TAG_INT_ARRAY:  return &NbtBuffer::readIntArray;
-            default: return NULL; // Also bogus
-        }
+        assert(bufferPos + len <= bufferSize);
+        memcpy(buf, _buffer + bufferPos, len);
+        bufferPos += len;
     }
 
     Tag *NbtBuffer::readTag()
@@ -139,7 +129,7 @@ namespace nbt
         Tag *nameTag = readString();
         TagString *nameTagStr = dynamic_cast<TagString *>(nameTag);
 
-        NbtMembFn reader = getReader(type);
+        NbtMembFn reader = readerFunctions[type];
         Tag *res = (this->*reader)();
         res->setName(nameTagStr->getValue());
 
@@ -161,8 +151,7 @@ namespace nbt
         int16_t val;
         readBuffer(&val, 2);
 
-        if (!is_big_endian())
-            flipBytes<int16_t>(val);
+        val = be16toh(val);
 
         return new TagShort("", val);
     }
@@ -172,8 +161,7 @@ namespace nbt
         int32_t val;
         readBuffer(&val, 4);
 
-        if (!is_big_endian())
-            flipBytes<int32_t>(val);
+        val = be32toh(val);
 
         return new TagInt("", val);
     }
@@ -183,32 +171,38 @@ namespace nbt
         int64_t val;
         readBuffer(&val, 8);
 
-        if (!is_big_endian())
-            flipBytes<int64_t>(val);
+        val = be64toh(val);
 
         return new TagLong("", val);
     }
 
     Tag *NbtBuffer::readFloat()
     {
-        float val;
+        union endianConvert
+        {
+            int i;
+            float f;
+        } val;
+
         readBuffer(&val, 4);
 
-        if (!is_big_endian())
-            flipBytes<float>(val);
+        val.i = be32toh(val.i);
 
-        return new TagFloat("", val);
+        return new TagFloat("", val.f);
     }
 
     Tag *NbtBuffer::readDouble()
     {
-        double val;
+        union endianConvert
+        {
+            long l;
+            double d;
+        } val;
         readBuffer(&val, 8);
 
-        if (!is_big_endian())
-            flipBytes<double>(val);
+        val.l = be64toh(val.l);
 
-        return new TagDouble("", val);
+        return new TagDouble("", val.d);
     }
 
     Tag *NbtBuffer::readByteArray()
@@ -216,8 +210,7 @@ namespace nbt
         int32_t len;
         readBuffer(&len, 4);
 
-        if (!is_big_endian())
-            flipBytes<int32_t>(len);
+        len = be32toh(len);
 
         unsigned char *byteArray = new unsigned char[len];
 
@@ -231,19 +224,18 @@ namespace nbt
         int32_t len;
         readBuffer(&len, 4);
 
-        if (!is_big_endian())
-            flipBytes<int32_t>(len);
+        len = be32toh(len);
 
-        IntArray ia;
+        int* intArray = new int[len];
+
+        readBuffer(intArray, len * sizeof(int));
+
         for (int i = 0; i < len; ++i)
         {
-            int32_t val;
-            readBuffer(&val, 4);
-
-            ia.push_back(val);
+            intArray[i] = be32toh(intArray[i]);
         }
 
-        return new TagIntArray("", ia);
+        return new TagIntArray("", intArray, len);
     }
 
     Tag *NbtBuffer::readString()
@@ -251,17 +243,13 @@ namespace nbt
         int16_t len;
         readBuffer(&len, 2);
 
-        if (!is_big_endian())
-            flipBytes<int16_t>(len);
+        len = be16toh(len);
 
         std::string str;
-        for (int i = 0; i < len; ++i)
-        {
-            // TODO: Read blocks
-            uint8_t ch;
-            readBuffer(&ch, 1);
-            str.push_back(ch);
-        }
+        str.reserve(len);
+
+        str.append(reinterpret_cast<char*>(_buffer + bufferPos),len);
+        bufferPos += len;
 
         return new TagString("", str);
     }
@@ -276,10 +264,9 @@ namespace nbt
 
         TagList *ret = new TagList(childType, "");
 
-        if (!is_big_endian())
-            flipBytes<int32_t>(len);
+        len = be32toh(len);
 
-        NbtMembFn reader = getReader(childType);
+        NbtMembFn reader = readerFunctions[childType];
         for (int i = 0; i < len; ++i)
         {
             Tag *child = (this->*reader)();

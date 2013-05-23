@@ -261,12 +261,13 @@ namespace nbt
     class TagIntArray : public Tag
     {
         public:
-            TagIntArray(const std::string &name,
-                         const IntArray &value = IntArray());
+            TagIntArray(const std::string &name, int* value, size_t size);
             TagIntArray(const TagIntArray &t);
+            virtual ~TagIntArray();
 
-            IntArray getValue() const;
-            void setValue(const IntArray &value);
+            int* getValues() const;
+            void setValues(int *values, unsigned int newSize);
+            unsigned int getSize() const;
 
             virtual uint8_t getType() const;
             virtual ByteArray toByteArray() const;
@@ -275,7 +276,8 @@ namespace nbt
             virtual Tag *clone() const;
 
         protected:
-            IntArray _value;
+            int* _values;
+            size_t _size;
     };
 
 
@@ -421,7 +423,6 @@ namespace nbt
 
         protected:
             void readBuffer(void* buf, unsigned len);
-            NbtMembFn getReader(uint8_t type);
 
             Tag *readTag();
 
@@ -436,6 +437,8 @@ namespace nbt
             Tag *readList();
             Tag *readCompound();
             Tag *readIntArray();
+
+            static const NbtMembFn readerFunctions[];
 
             Tag *_root;
 

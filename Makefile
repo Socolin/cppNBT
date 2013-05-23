@@ -1,5 +1,6 @@
 CC=g++
-CPPFLAGS=-Wall -ansi -pedantic -O2 -fno-elide-constructors -g -L.
+CPPFLAGS=-Wall -ansi -pedantic -O2 -fno-elide-constructors -g -L. -std=c++11
+#CPPFLAGS=-Wall -ansi -pedantic -pg -fno-elide-constructors -g -L. -std=c++11 -fprofile-arcs -ftest-coverage
 
 # Main program sources
 FILES=util.cc tag.cc tag_byte.cc tag_byte_array.cc tag_compound.cc tag_list.cc \

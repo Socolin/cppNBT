@@ -226,19 +226,18 @@ namespace nbt
         int32_t len;
         gzread(_file, &len, 4);
 
-        if (!is_big_endian())
-            flipBytes<int32_t>(len);
+        len = be32toh(len);
 
-        IntArray ia;
+        int* intArray = new int[len];
+
+        gzread(_file, intArray, len * sizeof(int));
+
         for (int i = 0; i < len; ++i)
         {
-            int32_t val;
-            gzread(_file, &val, 4);
-
-            ia.push_back(val);
+            intArray[i] = be32toh(intArray[i]);
         }
 
-        return new TagIntArray("", ia);
+        return new TagIntArray("", intArray, len);
     }
 
     Tag *NbtFile::readString()
