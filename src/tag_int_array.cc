@@ -39,7 +39,7 @@ namespace nbt
 
     TagIntArray::~TagIntArray()
     {
-        delete _values;
+        delete[] _values;
     }
 
     int* TagIntArray::getValues() const
