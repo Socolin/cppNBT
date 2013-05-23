@@ -23,6 +23,7 @@
 #include <sstream>
 #include <list>
 #include <vector>
+#include <map>
 #include <stdexcept>
 #include <functional>
 #include <cerrno>
@@ -175,14 +176,12 @@ namespace nbt
     class TagCompound : public Tag
     {
         public:
-            TagCompound(const std::string &name = "",
-                        const std::list<Tag *> &value  = 
-                            std::list<Tag *>());
+            TagCompound(const std::string &name = "");
             TagCompound(const TagCompound &t);
 
             ~TagCompound();
 
-            std::list<Tag *> getValue() const;
+            const std::map<std::string, Tag *>& getValue() const;
             void setValue(std::list<Tag *> value);
 
             void insert(const Tag &tag);
@@ -200,7 +199,7 @@ namespace nbt
             virtual Tag *clone() const;
 
         protected:
-            std::list<Tag *> _value;
+            std::map<std::string, Tag *> _value;
     };
 
 

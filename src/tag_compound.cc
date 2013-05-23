@@ -20,37 +20,30 @@
 
 namespace nbt
 {
-    TagCompound::TagCompound(const std::string &name,
-                             const std::list<Tag *> &value)
+    TagCompound::TagCompound(const std::string &name)
         : Tag(name)
     {
-        std::list<Tag *>::const_iterator i;
-
-        for (i = value.begin(); i != value.end(); ++i)
-            insert(**i);
     }
 
 
     TagCompound::TagCompound(const TagCompound &t) : Tag(t.getName())
     {
-        std::vector<Tag *>::const_iterator i;
-        std::vector<Tag *> v = t.getValues();
-
-        for (i = v.begin(); i != v.end(); ++i)
-            insert(**i);
-    }
+        for (auto tagItr : t._value)
+        {
+            insert(tagItr.second->clone());
+        }
+   }
 
 
     TagCompound::~TagCompound()
     {
-        std::list<Tag *>::iterator it;
-
-        for (it = _value.begin(); it != _value.end(); ++it)
-            delete *it;
+        for (auto tagItr : _value)
+            delete tagItr.second;
+        _value.clear();
     }
 
 
-    std::list<Tag *> TagCompound::getValue() const
+    const std::map<std::string, Tag *>& TagCompound::getValue() const
     {
         return _value;
     }
@@ -65,51 +58,35 @@ namespace nbt
 
     void TagCompound::insert(const Tag &tag)
     {
-        _value.push_back(tag.clone());
+        _value[tag.getName()] = tag.clone();
     }
 
     void TagCompound::insert(Tag *tag)
     {
-        _value.push_back(tag);
+        _value[tag->getName()] = tag;
     }
 
     void TagCompound::remove(const std::string &name)
     {
-        // TODO: Throw exception if name not known
-        std::list<Tag *>::iterator it;
-        for (it = _value.begin(); it != _value.end(); ++it)
-        {
-            if ((*it)->getName() == name)
-            {
-                delete *it;
-                _value.erase(it);
-
-                break;
-            }
-        }
+        _value.erase(name);
     }
 
     std::vector<std::string> TagCompound::getKeys() const
     {
         std::vector<std::string> ret;
-        std::list<Tag *>::const_iterator it;
 
-        for (it = _value.begin(); it != _value.end(); ++it)
-            ret.push_back((*it)->getName());
+        for (auto tagItr : _value)
+            ret.push_back(tagItr.first);
 
         return ret;
     }
 
-
     std::vector<Tag *> TagCompound::getValues() const
     {
         std::vector<Tag *> ret;
-        std::list<Tag *>::const_iterator it;
 
-        for (it = _value.begin(); it != _value.end(); ++it)
-        {
-            ret.push_back(*it);
-        }
+        for (auto tagItr : _value)
+            ret.push_back(tagItr.second);
 
         return ret;
     }
@@ -117,17 +94,8 @@ namespace nbt
 
     Tag *TagCompound::getValueAt(const std::string &key) const
     {
-        std::list<Tag *>::const_iterator it;
-
-        for (it = _value.begin(); it != _value.end(); ++it)
-		{
-            if ((*it)->getName() == key)
-			{
-                return *it;
-			}
-		}
-
-        throw KeyNotFoundException();
+        auto tagItr = _value.find(key);
+        return tagItr->second;
     }
 
 
@@ -140,11 +108,10 @@ namespace nbt
     ByteArray TagCompound::toByteArray() const
     {
         ByteArray ret = Tag::toByteArray();
-        std::list<Tag *>::const_iterator it;
 
-        for(it = _value.begin(); it != _value.end(); ++it)
+        for (auto tagItr : _value)
         {
-            ByteArray tmp = (*it)->toByteArray();
+            ByteArray tmp = tagItr.second->toByteArray();
 
             for (size_t i = 0; i < tmp.size(); ++i)
                 ret.push_back(tmp[i]);
@@ -159,8 +126,6 @@ namespace nbt
     std::string TagCompound::toString() const
     {
         std::stringstream ret;
-        std::list<Tag *>::const_iterator it;
-
         ret << "TAG_Compound";
 
         if (!_name.empty())
@@ -169,10 +134,12 @@ namespace nbt
         ret << ": " << _value.size() << " entries" << std::endl
             << "{" << std::endl;
 
-        for (it = _value.begin(); it != _value.end(); ++it)
+        for (auto tagItr : _value)
+        {
             ret << "  " 
-                << string_replace((*it)->toString(), "\n", "\n  ") 
+                << string_replace(tagItr.second->toString(), "\n", "\n  ")
                 << std::endl;
+        }
 
         ret << "}";
 
@@ -183,9 +150,10 @@ namespace nbt
     {
         TagCompound *ret = new TagCompound(_name);
 
-        std::list<Tag *>::const_iterator t;
-        for (t = _value.begin(); t != _value.end(); ++t)
-            ret->insert(**t);
+        for (auto tagItr : _value)
+        {
+            ret->insert(tagItr.second->clone());
+        }
 
         return ret;
     }
