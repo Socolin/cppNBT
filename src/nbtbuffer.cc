@@ -130,6 +130,11 @@ namespace nbt
         TagString *nameTagStr = dynamic_cast<TagString *>(nameTag);
 
         NbtMembFn reader = readerFunctions[type];
+        if (reader == nullptr)
+        {
+            delete nameTag;
+            return nullptr;
+        }
         Tag *res = (this->*reader)();
         res->setName(nameTagStr->getValue());
 
