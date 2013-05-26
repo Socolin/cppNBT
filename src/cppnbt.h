@@ -418,6 +418,8 @@ namespace nbt
             virtual ~NbtBuffer();
 
             void read(uint8_t *compressedBuffer, unsigned int length);
+            char* write(Tag* tag, unsigned long& len);
+            char* writeGzip(Tag* tag, unsigned int& len);
 
             Tag *getRoot() const;
             void setRoot(const Tag &r);

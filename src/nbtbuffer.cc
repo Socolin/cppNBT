@@ -100,6 +100,57 @@ namespace nbt
 
     }
 
+    char* NbtBuffer::write(Tag *tag, unsigned long& len)
+    {
+        ByteArray bs = tag->toByteArray();
+
+        len = bs.size();
+        char* buffer = new char[len];
+        compress((uint8_t*)buffer, &len, bs.data(), bs.size());
+        return buffer;
+
+    }
+
+    char* NbtBuffer::writeGzip(Tag *tag, unsigned int& len)
+    {
+        ByteArray bs = tag->toByteArray();
+
+        len = bs.size() * 2;
+        uint8_t* buffer = new uint8_t[len];
+
+        /* =       =                 = */
+        z_stream stream;
+        int err;
+
+        stream.next_in = (z_const Bytef *)bs.data();
+        stream.avail_in = (uInt)bs.size();
+        stream.next_out = buffer;
+        stream.avail_out = (uInt)len;
+        stream.zalloc = (alloc_func)0;
+        stream.zfree = (free_func)0;
+        stream.opaque = (voidpf)0;
+
+        err = deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAX_WBITS + 16, 8, Z_DEFAULT_STRATEGY);
+        if (err != Z_OK)
+        {
+            delete[] buffer;
+            return nullptr;
+        }
+
+        err = deflate(&stream, Z_FINISH);
+        if (err != Z_STREAM_END)
+        {
+            deflateEnd(&stream);
+            delete[] buffer;
+            return nullptr;
+        }
+        len = stream.total_out;
+
+        err = deflateEnd(&stream);
+        /* =       =                 = */
+
+        return (char*)buffer;
+    }
     Tag *NbtBuffer::getRoot() const
     {
         return _root;
