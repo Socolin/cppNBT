@@ -334,7 +334,10 @@ namespace nbt
             Tag *operator[](size_t index) const;
             TagList &operator<<(const Tag &tag);
 
-            size_t size() const;                
+            size_t size() const;
+
+            template<typename TagType, typename ValueType>
+            void fillVariablesWithList(std::initializer_list<ValueType*> values);
 
             virtual uint8_t getType() const;
             virtual ByteArray toByteArray() const;
@@ -501,6 +504,27 @@ namespace nbt
         }
         return nullptr;
     }
+
+
+    template<typename TagType, typename ValueType>
+    inline void TagList::fillVariablesWithList(std::initializer_list<ValueType*> values)
+    {
+        size_t countTag = _value.size();
+        auto itr = values.begin();
+        for (size_t i = 0; i < countTag; i++)
+        {
+            nbt::Tag* tag = _value[i];
+            if (tag == nullptr)
+                continue;
+            TagType* tagValue = dynamic_cast<TagType*>(tag);
+            if (tagValue == nullptr)
+                continue;
+            **itr = tagValue->getValue();
+            itr++;
+        }
+    }
+
+
 }
 
 #endif

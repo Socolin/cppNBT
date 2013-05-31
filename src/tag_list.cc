@@ -196,7 +196,6 @@ namespace nbt
         return TAG_LIST;
     }
 
-
     ByteArray TagList::toByteArray() const
     {
         ByteArray ret = Tag::toByteArray();
