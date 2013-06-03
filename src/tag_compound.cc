@@ -157,4 +157,79 @@ namespace nbt
 
         return ret;
     }
+
+    int TagCompound::getInt(const std::string& key) const
+    {
+        nbt::TagInt* tag = getValueAt<nbt::TagInt>(key);
+        if (tag)
+        {
+            return tag->getValue();
+        }
+        return 0;
+    }
+
+    short TagCompound::getShort(const std::string& key) const
+    {
+        nbt::TagShort* tag = getValueAt<nbt::TagShort>(key);
+        if (tag)
+        {
+            return tag->getValue();
+        }
+        return 0;
+    }
+
+    char TagCompound::getByte(const std::string& key) const
+    {
+        nbt::TagByte* tag = getValueAt<nbt::TagByte>(key);
+        if (tag)
+        {
+            return tag->getValue() != 0;
+        }
+        return 0;
+    }
+
+    bool TagCompound::getBool(const std::string& key) const
+    {
+        nbt::TagByte* tag = getValueAt<nbt::TagByte>(key);
+        if (tag)
+        {
+            return tag->getValue();
+        }
+        return false;
+    }
+
+    float TagCompound::getFloat(const std::string& key) const
+    {
+        nbt::TagFloat* tag = getValueAt<nbt::TagFloat>(key);
+        if (tag)
+        {
+            return tag->getValue();
+        }
+        return 0;
+    }
+
+    double TagCompound::getDouble(const std::string& key) const
+    {
+        nbt::TagDouble* tag = getValueAt<nbt::TagDouble>(key);
+        if (tag)
+        {
+            return tag->getValue();
+        }
+        return 0;
+    }
+
+    const std::string& TagCompound::getString(const std::string& key) const
+    {
+        nbt::TagString* tag = getValueAt<nbt::TagString>(key);
+        if (tag)
+        {
+            return tag->getValue();
+        }
+        return "";
+    }
+
+    bool TagCompound::hasKey(const std::string& key) const
+    {
+        return _value.find(key) != _value.end();
+    }
 }

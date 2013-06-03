@@ -200,6 +200,15 @@ namespace nbt
 
             virtual Tag *clone() const;
 
+            int getInt(const std::string &key) const;
+            short getShort(const std::string &key) const;
+            char getByte(const std::string &key) const;
+            bool getBool(const std::string &key) const;
+            float getFloat(const std::string &key) const;
+            double getDouble(const std::string &key) const;
+            const std::string& getString(const std::string &key) const;
+
+            bool hasKey(const std::string &key) const;
         protected:
             std::map<std::string, Tag *> _value;
     };
