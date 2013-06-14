@@ -11,4 +11,5 @@ nbttest
 *.gcov
 *.gcno
 *.gcda
-
+*.a
+*.dSYM
