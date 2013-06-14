@@ -1,4 +1,4 @@
-CC=g++
+CXX=g++
 CPPFLAGS=-Wall -ansi -pedantic -O2 -fno-elide-constructors -g -L. -std=c++11
 #CPPFLAGS=-Wall -ansi -pedantic -pg -fno-elide-constructors -g -L. -std=c++11 -fprofile-arcs -ftest-coverage
 
@@ -17,10 +17,10 @@ libcppnbt: objects
 	ar -rcs libcppnbt.a $(OBJECTS)
 
 nbttest: libcppnbt test.cc
-	$(CC) $(CPPFLAGS) test.cc -lcppnbt -lz -o $@
+	$(CXX) $(CPPFLAGS) test.cc -lcppnbt -lz -o $@
 
 objects: $(OBJECTS)
 $(OBJECTS):
 
 clean:
-	@find -name '*.o' -print -delete | sed -e 's/^/Delete /'
+	@find . -name '*.o' -print -delete | sed -e 's/^/Delete /'

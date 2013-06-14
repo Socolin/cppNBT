@@ -26,7 +26,7 @@ namespace nbt
     {
         std::string ret = string;
 
-        for (int j = 0; (j = ret.find(find, j)) != std::string::npos;)
+        for (size_t j = 0; (j = ret.find(find, j)) != std::string::npos;)
             ret.replace(j++, find.length(), replace);
 
         return ret;
