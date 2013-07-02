@@ -40,7 +40,7 @@ namespace nbt
         close();
     }
 
-    void NbtFile::read()
+    void NbtFile::read() throw (GzipIOException)
     {
         if (_file == Z_NULL)
             throw GzipIOException(0);
@@ -56,7 +56,7 @@ namespace nbt
         return;
     }
 
-    void NbtFile::write()
+    void NbtFile::write() throw (GzipIOException)
     {
         if (_file == Z_NULL)
             throw GzipIOException(0);
@@ -81,7 +81,7 @@ namespace nbt
         _root = r.clone();
     }
 
-    void NbtFile::open(const std::string &fname, const std::string &flags)
+    void NbtFile::open(const std::string &fname, const std::string &flags) throw (GzipIOException)
     {
         if (_file != Z_NULL)
             close();

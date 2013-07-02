@@ -11,4 +11,4 @@ nbttest
 *.gcov
 *.gcno
 *.gcda
-
+libcppnbt.a

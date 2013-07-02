@@ -120,7 +120,6 @@ namespace nbt
 
     void TagList::remove(Tag *tag)
     {
-        // TODO: Throw exception if name not known
         std::vector<Tag *>::iterator i;
         for (i = _value.begin(); i < _value.end(); ++i)
         {
@@ -137,8 +136,7 @@ namespace nbt
 
     void TagList::remove(size_t i)
     {
-        // TODO: Out of bounds exception
-        if (_value.size() > 0)
+        if (_value.size() > 0 && i < _value.size())
         {
             std::vector<Tag *>::iterator it = _value.begin() + i;
             delete *it;
@@ -162,8 +160,7 @@ namespace nbt
     {
         if (_value.size() > 0)
             return _value.at(i);
-        else
-            throw EmptyListException();
+        return nullptr;
     }
 
 
@@ -171,8 +168,7 @@ namespace nbt
     {
         if (_value.size() > 0)
             return _value.back();
-        else
-            throw EmptyListException();
+        return nullptr;
     }
 
 
@@ -180,8 +176,7 @@ namespace nbt
     {
         if (_value.size() > 0)
             return _value.front();
-        else
-            throw EmptyListException();
+        return nullptr;
     }
 
 

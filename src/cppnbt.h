@@ -472,10 +472,10 @@ namespace nbt
             virtual ~NbtFile();
 
             void open(const std::string &fname = "",
-                      const std::string &flags = "r");
+                      const std::string &flags = "r") throw (GzipIOException);
             void close();
-            void read();
-            void write();
+            void read() throw (GzipIOException);
+            void write() throw (GzipIOException);
 
             Tag *getRoot() const;
             void setRoot(const Tag &r);
