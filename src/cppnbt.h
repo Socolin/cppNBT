@@ -31,6 +31,16 @@
 
 #include <stdint.h>
 
+#ifdef __APPLE__
+#include <libkern/OSByteOrder.h>
+#define htobe16(x)  OSSwapHostToBigInt16(x)
+#define be16toh(x)  OSSwapBigToHostInt16(x)
+#define htobe32(x)  OSSwapHostToBigInt32(x)
+#define be32toh(x)  OSSwapBigToHostInt32(x)
+#define htobe64(x)  OSSwapHostToBigInt64(x)
+#define be64toh(x)  OSSwapBigToHostInt64(x)
+#endif // #ifdef __APPLE__
+
 namespace nbt
 {
     std::string string_replace(const std::string &string, 
@@ -206,7 +216,7 @@ namespace nbt
             bool getBool(const std::string &key) const;
             float getFloat(const std::string &key) const;
             double getDouble(const std::string &key) const;
-            const std::string& getString(const std::string &key) const;
+            std::string getString(const std::string &key) const;
 
             bool hasKey(const std::string &key) const;
         protected:

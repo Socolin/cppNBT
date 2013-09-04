@@ -218,7 +218,7 @@ namespace nbt
         return 0;
     }
 
-    const std::string& TagCompound::getString(const std::string& key) const
+    std::string TagCompound::getString(const std::string& key) const
     {
         nbt::TagString* tag = getValueAt<nbt::TagString>(key);
         if (tag)

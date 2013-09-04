@@ -12,3 +12,5 @@ nbttest
 *.gcno
 *.gcda
 libcppnbt.a
+*.a
+*.dSYM
