@@ -14,3 +14,4 @@ nbttest
 libcppnbt.a
 *.a
 *.dSYM
+*.d
